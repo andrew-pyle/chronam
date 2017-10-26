@@ -31,7 +31,8 @@ Getting issues:
 1865-08-23
 Data available in this session: news_data, news_info, start_date, end_date
 
-The data is also saved to disk in the working directory in a folder named the lccn number for the newspaper
+The data is also saved to disk in the working directory in a folder named
+the lccn number for the newspaper
 ```
 
 The data will be saved to a folder
