@@ -11,14 +11,37 @@ from urllib.request import Request, urlopen
 from urllib.error import URLError
 
 
-# TODO: network exception handling    
+def validate_newspaper_url(url):
+    """"
+    Ensures that the url goes to a chroniclingamerica.loc.gov newspaper
+    with a .json representation which can be parsed programmatically
+    """
+    domain_chk = 'chroniclingamerica.loc.gov/lccn/sn' 
+    json_chk = '.json'
+    if domain_chk in url and json_chk in url:
+        return True
+    else:
+        return False
+
+
 def get_json(url):
     '''Downloads json from url from chronliclingamerica.loc.gov and saves as a
-    python dict. 
+    Python dict. 
+    
     Parameters: url -> str
     Returns:    dict'''
     
-    r = Request(url)
+    # catch invalid urls
+    try:
+        r = Request(url)
+    except ValueError as e:
+        raise ValueError(e)
+            
+    # Catch non-chronam urls
+    if validate_newspaper_url(url) is not True:
+        #print(validate_newspaper_url(url))
+        raise ValueError('Invalid url for chroniclingamerica.loc.gov OCR '
+                         'newspaper (url must end in .json')
     try:
         data = urlopen(r)
     except URLError as e:
@@ -36,6 +59,7 @@ def get_json(url):
         return json_dict
 
 
+# needs url validation (?)
 def get_txt(url):
     '''Downloads txt from url from chroniclingamerica.loc.gov and saves as
     python str. 
@@ -65,8 +89,8 @@ def get_txt(url):
     else:
         retrieved_txt = data.read().decode('utf-8')
     return retrieved_txt
-            
-  
+
+
 def disp_newspaper(url, return_json=False):
     '''Displays issues available for a given newspaper which has been
     "inspected" using chron_amer_inspect(url) for a given newspaper url
@@ -76,18 +100,26 @@ def disp_newspaper(url, return_json=False):
                        Publisher,
                        First Issue, Last Issue, Total Number of issues,'''
     
-    newspaper_json = get_json(url) 
-                      
-    newspaper_string = '{} | Library of Congress No.: {} | {}\nPublished from {} to {} by {}'.format(newspaper_json['name'],
-                            newspaper_json['lccn'],
-                            newspaper_json['place_of_publication'], 
-                            newspaper_json['start_year'], 
-                            newspaper_json['end_year'],
-                            newspaper_json['publisher'])
-                     
-    issues_string = 'Number of Issues Downloadable: {}\nFirst issue: {}\nLast Issue: {}\n'.format(len(newspaper_json['issues']),
-                         newspaper_json['issues'][0]['date_issued'], 
-                         newspaper_json['issues'][-1]['date_issued'])
+    try:
+        newspaper_json = get_json(url)
+    except ValueError as e:
+        print(e)
+        return
+
+    newspaper_string = ('{} | Library of Congress No.: {} | {}\nPublished '
+                       'from {} to {} by {}').format(
+                           newspaper_json['name'],
+                           newspaper_json['lccn'],
+                           newspaper_json['place_of_publication'], 
+                           newspaper_json['start_year'], 
+                           newspaper_json['end_year'],
+                           newspaper_json['publisher'])
+
+    issues_string = ('Number of Issues Downloadable: {}\nFirst issue: {}\n'
+                    'Last Issue: {}\n').format(
+                        len(newspaper_json['issues']),
+                        newspaper_json['issues'][0]['date_issued'], 
+                        newspaper_json['issues'][-1]['date_issued'])
     print(newspaper_string)
     print('\n', end='')
     print(issues_string)
@@ -141,6 +173,12 @@ def dwnld_newspaper(url, start_date=None, end_date=None, save_to_file=False):
         print('Invalid Date entered')
         return
     
+    try:
+        newspaper_json = get_json(url)
+    except ValueError as e:
+        print(e)
+        return
+    
     # Debug Print statements
     print('start date:', start_date_p)
     print('end date:', end_date_p)
@@ -169,25 +207,25 @@ def dwnld_newspaper(url, start_date=None, end_date=None, save_to_file=False):
 #       in the data structure or not
 
 
-if __name__ == "__main__":
-    print('Welcome to Chronicling America Downloader')
-    url = input('enter a url: ')
-    
-    print()
-#    news_info = inspect_issues(url)
-#    disp_newspaper(news_info)
-    news_info = disp_newspaper(url, return_json=True)
-    
-    start_date = input('What is the start date to download? (YYYY-MM-DD) > ')
-    end_date = input('What is the last date to download? (YYYY-MM-DD) > ')
-    print()
-    
-    news_data = dwnld_newspaper(url, start_date=start_date, end_date=end_date)
-    lccn_to_disk(news_info, news_data)
-    
-    print('Data available in this session: news_data, news_info, start_date, end_date')
-    print()
-    print('the data is also saved to disk in the working directory in a folder named the lccn number for the newspaper')
+#if __name__ == "__main__":
+#    print('Welcome to Chronicling America Downloader')
+#    url = input('enter a url: ')
+#    
+#    print()
+##    news_info = inspect_issues(url)
+##    disp_newspaper(news_info)
+#    news_info = disp_newspaper(url, return_json=True)
+#    
+#    start_date = input('What is the start date to download? (YYYY-MM-DD) > ')
+#    end_date = input('What is the last date to download? (YYYY-MM-DD) > ')
+#    print()
+#    
+#    news_data = dwnld_newspaper(url, start_date=start_date, end_date=end_date)
+#    lccn_to_disk(news_info, news_data)
+#    
+#    print('Data available in this session: news_data, news_info, start_date, end_date')
+#    print()
+#    print('the data is also saved to disk in the working directory in a folder named the lccn number for the newspaper')
     
     
     
