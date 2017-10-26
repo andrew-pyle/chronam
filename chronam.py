@@ -35,13 +35,13 @@ def get_json(url):
     try:
         r = Request(url)
     except ValueError as e:
-        raise ValueError(e)
+        raise e
             
     # Catch non-chronam urls
     if validate_newspaper_url(url) is not True:
         #print(validate_newspaper_url(url))
         raise ValueError('Invalid url for chroniclingamerica.loc.gov OCR '
-                         'newspaper (url must end in .json')
+                         'newspaper (url must end in .json)')
     try:
         data = urlopen(r)
     except URLError as e:
@@ -129,14 +129,18 @@ def disp_newspaper(url, return_json=False):
     
     
 def dwnld_page(url):  # url of page
-    """ """
+    """
+    Relies on validated URL
+    """
     txt_url = get_json(url)['text']
     txt = get_txt(txt_url)
     
     return txt
 
 def assemble_issue(url):  # url of issue
-    """ """
+    """
+    Relies on validated URL
+    """
     issue_string = ''    
     for page in get_json(url)['pages']:
         issue_string += dwnld_page(page['url'])
@@ -144,9 +148,13 @@ def assemble_issue(url):  # url of issue
     return issue_string  # string 'alltextforallpages'
 
  # TODO: Dir already exists exception handling
+ # TODO: parameters don't make sense
 def lccn_to_disk(newspaper_json, downloaded_issue):
-    """Params: newspaper_json -> dict returned by inspect_issues(url)
-               downloaded_issue -> dict returned by dwnld_newspaper()"""
+    """
+    Params: newspaper_json -> dict returned by inspect_issues(url)
+            downloaded_issue -> dict returned by dwnld_newspaper()
+    """
+    
     dir_name = newspaper_json['lccn']
     if not os.path.exists(dir_name):
         os.makedirs(dir_name)
@@ -159,7 +167,9 @@ def lccn_to_disk(newspaper_json, downloaded_issue):
 
 # TODO: pass exception handling up to main()
 # TODO: save_to_file param
-def dwnld_newspaper(url, start_date=None, end_date=None, save_to_file=False):  
+# TODO: allow restarting of downloads -> the function checks if the issue is              
+#       in the data structure or not
+def dwnld_newspaper(url, start_date, end_date):  
     """
     """
     newspaper_issues = {}
@@ -173,12 +183,6 @@ def dwnld_newspaper(url, start_date=None, end_date=None, save_to_file=False):
         print('Invalid Date entered')
         return
     
-    try:
-        newspaper_json = get_json(url)
-    except ValueError as e:
-        print(e)
-        return
-    
     # Debug Print statements
     print('start date:', start_date_p)
     print('end date:', end_date_p)
@@ -186,25 +190,23 @@ def dwnld_newspaper(url, start_date=None, end_date=None, save_to_file=False):
     # Interface
     print('Getting issues:')
     
-    for issue in get_json(url)['issues']:
-        if (issue['date_issued'] >= start_date and 
-                issue['date_issued'] <= end_date):
-            if issue['date_issued'] not in newspaper_issues:
-                print(issue['date_issued'])
-                newspaper_issues[issue['date_issued']] = \
-                    assemble_issue(issue['url'])
-            else:
-                print(issue['date_issued'] + '-ed-2')
-                newspaper_issues[issue['date_issued'] + '-ed-2'] = \
-                    assemble_issue(issue['url'])
-
-#    if save_to_file is True:
-#        with open()
+    try:
+        for issue in get_json(url)['issues']:
+            if (issue['date_issued'] >= start_date and 
+                    issue['date_issued'] <= end_date):
+                if issue['date_issued'] not in newspaper_issues:
+                    print(issue['date_issued'])
+                    newspaper_issues[issue['date_issued']] = \
+                        assemble_issue(issue['url'])
+                else:
+                    print(issue['date_issued'] + '-ed-2')
+                    newspaper_issues[issue['date_issued'] + '-ed-2'] = \
+                        assemble_issue(issue['url'])
+        return newspaper_issues # dict {'date_issued': 'alltextforallpages'}
     
-    return newspaper_issues # dict {'date_issued': 'alltextforallpages'}
-
-# TODO: allow restarting of downloads -> the function checks if the issue is              
-#       in the data structure or not
+    except ValueError as e:
+        print(e)
+        return
 
 
 #if __name__ == "__main__":
