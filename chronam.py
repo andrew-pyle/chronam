@@ -16,7 +16,7 @@ def validate_chronam_url(url):
     Ensures that the url goes to a chroniclingamerica.loc.gov newspaper
     with a .json representation which can be parsed programmatically
     """
-    domain_chk = 'chroniclingamerica.loc.gov/lccn/sn' 
+    domain_chk = 'chroniclingamerica.loc.gov/lccn/sn'
     json_chk = '.json'
     if domain_chk in url and json_chk in url:
         return True
@@ -26,13 +26,13 @@ def validate_chronam_url(url):
 
 def get_json(url):
     '''Downloads json from url from chronliclingamerica.loc.gov and saves as a
-    Python dict. 
-    
+    Python dict.
+
     Parameters: url -> str
     Returns:    dict'''
-    
+
     r = Request(url)
-            
+
     # Catch non-chronam urls
     if validate_chronam_url(url) is not True:
         raise ValueError('Invalid url for chroniclingamerica.loc.gov OCR '
@@ -57,10 +57,10 @@ def get_json(url):
 # needs url validation (?)
 def get_txt(url):
     '''Downloads txt from url from chroniclingamerica.loc.gov and saves as
-    python str. 
+    python str.
     Parameters: url -> str
     Returns:    string'''
-    
+
     missing_pages = []
     failed_pages = []
 
@@ -74,7 +74,7 @@ def get_txt(url):
             print('url: ', url)
             retrieved_txt = 'Likely Missing Page: Not digitized, published'
             missing_pages.append(url)
-            
+
         elif hasattr(e, 'code'):
             print('The server couldn\'t fulfill the request.')
             print('Error code: ', e.code)
@@ -89,12 +89,12 @@ def get_txt(url):
 def disp_newspaper(url, return_json=False):
     '''Displays issues available for a given newspaper which has been
     "inspected" using chron_amer_inspect(url) for a given newspaper url
-    
+
     Parameters: issues -> dict {issues: url}
     Returns:    print: Name of Newspaper, Location, lccn, Start Year,
                        Publisher,
                        First Issue, Last Issue, Total Number of issues,'''
-    
+
     try:
         newspaper_json = get_json(url)
     except ValueError as e:
@@ -104,48 +104,48 @@ def disp_newspaper(url, return_json=False):
                        'from {} to {} by {}').format(
                            newspaper_json['name'],
                            newspaper_json['lccn'],
-                           newspaper_json['place_of_publication'], 
-                           newspaper_json['start_year'], 
+                           newspaper_json['place_of_publication'],
+                           newspaper_json['start_year'],
                            newspaper_json['end_year'],
                            newspaper_json['publisher'])
 
     issues_string = ('Number of Issues Downloadable: {}\nFirst issue: {}\n'
                     'Last Issue: {}\n').format(
                         len(newspaper_json['issues']),
-                        newspaper_json['issues'][0]['date_issued'], 
+                        newspaper_json['issues'][0]['date_issued'],
                         newspaper_json['issues'][-1]['date_issued'])
     print(newspaper_string)
-    print('\n', end='')
+    print('------------------------', end='')
     print(issues_string)
-    
+
     if return_json is True:
         return newspaper_json
-    
-    
+
+
 def dwnld_page(url):  # url of page
     """
     Relies on validated URL
     """
     txt_url = get_json(url)['text']
     txt = get_txt(txt_url)
-    
+
     return txt
 
 def assemble_issue(url):  # url of issue
     """
     Relies on validated URL
     """
-    issue_string = ''    
+    issue_string = ''
     for page in get_json(url)['pages']:
         issue_string += dwnld_page(page['url'])
-    
+
     return issue_string  # string 'alltextforallpages'
 
  # TODO: Dir already exists exception handling
 def lccn_to_disk(dir_name, downloaded_issue):
     """
     Params: dir_name -> str: name of created directory for data
-    
+
             downloaded_issue -> dict: {'YYYY-MM-DD': 'string of txt'},
                                       returned by dwnld_newspaper()
     """
@@ -157,15 +157,15 @@ def lccn_to_disk(dir_name, downloaded_issue):
     return
 
 
-# TODO: allow restarting of downloads -> the function checks if the issue is              
+# TODO: allow restarting of downloads -> the function checks if the issue is
 #       in the data structure or not
-def dwnld_newspaper(url, start_date, end_date):  
+def dwnld_newspaper(url, start_date, end_date):
     """
     Downloads OCR text of a newspaper from chroniclingamerica.loc.gov by
     parsing the .json representation using the exposed REST API. Traverses
     the json from the newspaper .json url to each page and composes them into
     a dict of issues where {'date': 'issue text'}
-    
+
     parameters: url -> str: base url of newspaper. Ends in .json
                 start_date -> datetime.date object representing the first issue
                               to download
@@ -174,17 +174,17 @@ def dwnld_newspaper(url, start_date, end_date):
     returns: newspaper_issues -> dict: {'date': 'issue text'}
     """
     newspaper_issues = {}
-    
+
     # Debug Print statements
     print('start date:', start_date)
     print('end date:', end_date)
-    
+
     # Interface
     print('Getting issues:')
-    
+
     try:
         for issue in get_json(url)['issues']:
-            if (parse_date(issue['date_issued']) >= start_date and 
+            if (parse_date(issue['date_issued']) >= start_date and
                     parse_date(issue['date_issued']) <= end_date):
                 if issue['date_issued'] not in newspaper_issues:
                     print(issue['date_issued'])
@@ -195,7 +195,7 @@ def dwnld_newspaper(url, start_date, end_date):
                     newspaper_issues[issue['date_issued'] + '-ed-2'] = \
                         assemble_issue(issue['url'])
         return newspaper_issues # dict {'date_issued': 'alltextforallpages'}
-    
+
     except ValueError as e:
         return e
 
@@ -214,7 +214,7 @@ def parse_date(date):
 def validate_date_input(start_end):
     """
     Ensures that user enters a valid date immediately.
-    Parameters: start_end -> str: 'start' or 'end', whether to visually prompt 
+    Parameters: start_end -> str: 'start' or 'end', whether to visually prompt
                                   for start or end date.
     Returns: return_date  -> datetime.date
     """
@@ -238,25 +238,25 @@ def main():
         output: saves issues to disk in a directory named the lccn number
     """
     print('Welcome to Chronicling America Downloader')
-    url = input('enter a url: ')    
+    url = input('enter a url: ')
     print()
-    
+
     # TODO: bad: co-opted usage
     news_info = disp_newspaper(url, return_json=True)
 
     # looping, validated date input
     start_date = validate_date_input('start')
     end_date = validate_date_input('end')
-    
+
     print()
     try:
-        news_data = dwnld_newspaper(url, start_date=start_date, 
+        news_data = dwnld_newspaper(url, start_date=start_date,
                                     end_date=end_date)
     except ValueError as e:
         return e
-    
+
     lccn_to_disk(news_info['lccn'], news_data)
-    
+
     print('Data available in this session: news_data, news_info, start_date, '
           'end_date')
     print()
@@ -265,19 +265,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
