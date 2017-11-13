@@ -106,8 +106,8 @@ def get_txt(url):
         retrieved_txt = data.read().decode('utf-8')
     return retrieved_txt
 
- # TODO remove return_json param.
-def disp_newspaper(url, return_json=False):
+
+def disp_newspaper(url):
     """Displays information and issues available for a given newspaper
 
     Parameters: url -> url of JSON file for newspaper: str
@@ -135,9 +135,6 @@ def disp_newspaper(url, return_json=False):
     print(newspaper_string)
     print('\n', end='')
     print(issues_string)
-
-    if return_json is True:
-        return newspaper_json
 
 
 def dwnld_page(url):  # url of page
@@ -262,7 +259,8 @@ def main():
     print()
 
     # TODO: bad: co-opted usage
-    news_info = disp_newspaper(url, return_json=True)
+    news_info = get_json(url)
+    disp_newspaper(url)
 
     # looping, validated date input
     start_date = validate_date_input('start')
