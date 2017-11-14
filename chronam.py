@@ -16,8 +16,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 ------------------------------
 """
 
-# TODO: Function docstrings: params and inputs
-#       API documentation, dependencies
+# TODO: API documentation, module dependencies
 
 import json
 import os
@@ -72,7 +71,6 @@ def get_json(url):
         return json_dict
 
 
-# TODO: return missing & failed pages
 def get_txt(url):
     """Downloads txt from url from chroniclingamerica.loc.gov and saves as
     python str.
@@ -82,6 +80,7 @@ def get_txt(url):
     Parameters: url -> url for OCR text returned by get_json(): str
     Returns:    retrieved_txt -> OCR text: str"""
 
+    # TODO: return lists of missing & failed pages
     missing_pages = []
     failed_pages = []
 
@@ -160,20 +159,34 @@ def assemble_issue(url):  # url of issue
     return issue_string  # str 'alltextforallpages'
 
 
+def parse_date(datestring):
+    """Converts YYYY-MM-DD string into date object
+
+    Params: date -> str: 'YYYY-MM-DD'
+    Return: return_date -> date"""
+
+    date_fmt_str = '%Y-%m-%d'
+    return_date = datetime.strptime(datestring, date_fmt_str).date()
+    return return_date
+
+
 # TODO: allow restarting of downloads -> the function checks if the issue is
 #       in the data structure or not
 def dwnld_newspaper(url, start_date, end_date):
     """Downloads OCR text of a newspaper from chroniclingamerica.loc.gov by
-    parsing the .json representation using the exposed REST API. Traverses
+    parsing the .json representation using the exposed API. Traverses
     the json from the newspaper .json url to each page and composes them into
     a dict of issues where {'date': 'issue text'}
 
     Params: url -> str: base url of newspaper. Ends in .json
-            start_date -> datetime.date object: represents the first issue to download
-            end_date   -> datetime.date object: represents the last issue to download
+            start_date -> date: date(year, month, day)
+                          represents the first issue to download
+            end_date   -> date: date(year, month, day)
+                          represents the last issue to download
     Return: newspaper_issues -> dict: {'date': 'issue text'}"""
 
     newspaper_issues = {}
+
     # Terminal UI Print statements
     print('start date:', start_date)
     print('end date:', end_date)
@@ -199,17 +212,6 @@ def dwnld_newspaper(url, start_date, end_date):
         return e
 
 
-def parse_date(date):
-    """Converts YYYY-MM-DD string into datetime.date object
-
-    Params: date -> str: YYYY-MM-DD
-    Return: return_date -> datetime.date"""
-
-    date_fmt_str = '%Y-%m-%d'
-    return_date = datetime.strptime(date, date_fmt_str).date()
-    return return_date
-
-
 # TODO: Dir already exists exception handling
 def lccn_to_disk(dir_name, downloaded_issue):
    """Saves a dict of downloaded issues to disk. Creates a directory:
@@ -233,13 +235,13 @@ def lccn_to_disk(dir_name, downloaded_issue):
 def validate_date_input(start_end):
     """For CLI UI - Ensures that user enters a valid date.
     Params: start_end -> str: 'start' or 'end', whether to prompt for start or end date.
-    Return: return_date  -> datetime.date: validated date to pass to control flow"""
+    Return: return_date  -> date: validated date to pass to control flow"""
 
     return_date = None
     while return_date == None:
         try:
             return_date = parse_date(input('What is the {} date to download?'
-                                '(YYYY-MM-DD) > '.format(start_end)))
+                                           '(YYYY-MM-DD) > '.format(start_end)))
         except ValueError:
             print('Invalid Date')
             continue
@@ -258,7 +260,6 @@ def main():
     url = input('enter a url: ')
     print()
 
-    # TODO: bad: co-opted usage
     news_info = get_json(url)
     disp_newspaper(url)
 
@@ -275,9 +276,9 @@ def main():
 
     lccn_to_disk(news_info['lccn'], news_data)
 
-    print('Data available in this session: news_data, news_info, start_date, '
-          'end_date')
-    print()
+    # print('Data available in this session: news_data, news_info, start_date, '
+    #       'end_date')
+    # print()
     print('The data is also saved to disk in the working directory in a '
           'folder named the lccn number for the newspaper')
 
