@@ -132,7 +132,7 @@ def disp_newspaper(url):
                         newspaper_json['issues'][0]['date_issued'],
                         newspaper_json['issues'][-1]['date_issued'])
     print(newspaper_string)
-    print('\n', end='')
+    print('------------------------', end='')
     print(issues_string)
 
 
