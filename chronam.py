@@ -48,7 +48,7 @@ def get_json(url):
     Parameters: url -> url of JSON file for newspaper to download: str
     Returns:    json_dict -> dict representation of JSON from http request: dict"""
 
-    r = Request(url)
+    r = Request(url, headers={'User-Agent': 'Mozilla/5.0'})
 
     # Catch non-chronam urls
     if validate_chronam_url(url) is not True:
@@ -84,7 +84,7 @@ def get_txt(url):
     missing_pages = []
     failed_pages = []
 
-    r = Request(url)
+    r = Request(url, headers={'User-Agent': 'Mozilla/5.0'})
     try:
         data = urlopen(r)
     except URLError as e:
@@ -132,7 +132,7 @@ def disp_newspaper(url):
                         newspaper_json['issues'][0]['date_issued'],
                         newspaper_json['issues'][-1]['date_issued'])
     print(newspaper_string)
-    print('------------------------', end='')
+    print('------------------------')
     print(issues_string)
 
 
