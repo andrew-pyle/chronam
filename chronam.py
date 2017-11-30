@@ -1,18 +1,31 @@
+# -*- coding: utf-8 -*-
 """
 ==============
 chronam Module
 ==============
-Module to query the http://chroniclingamerica.loc.gov API. Provides functions to assemble the txt
-files for a given newspaper and issue held in the archive into a dict keyed on the date
-('YYYY-MM-DD')
+Module to query the http://chroniclingamerica.loc.gov API. Provides functions
+to assemble the txt files for a given newspaper and issue held in the archive
+into a dict keyed on the date ('YYYY-MM-DD')
 ------------------------------
 Copyright (c) 2017 Andrew Pyle.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies 
+of the Software, and to permit persons to whom the Software is furnished to do
+so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 ------------------------------
 """
 
@@ -27,8 +40,9 @@ from urllib.error import URLError
 
 
 def validate_chronam_url(url):
-    """"Naive check. Ensures that the url goes to a chroniclingamerica.loc.gov newspaper
-    and references the .json representation
+    """"Naive check. Ensures that the url goes to a 
+    chroniclingamerica.loc.gov newspaper and references the .json
+    representation
 
     Params: url -> url of JSON file for newspaper to download: str
     Return: Boolean"""
@@ -46,7 +60,7 @@ def get_json(url):
     Python dict.
 
     Parameters: url -> url of JSON file for newspaper to download: str
-    Returns:    json_dict -> dict representation of JSON from http request: dict"""
+    Returns:    json_dict -> dict: JSON from http request"""
 
     r = Request(url, headers={'User-Agent': 'Mozilla/5.0'})
 
@@ -110,7 +124,7 @@ def disp_newspaper(url):
     """Displays information and issues available for a given newspaper
 
     Parameters: url -> url of JSON file for newspaper: str
-    Returns:    newspaper_json -> dict representation of JSON from http request: dict"""
+    Returns:    newspaper_json -> dict: JSON from http request"""
 
     try:
         newspaper_json = get_json(url)
@@ -137,7 +151,8 @@ def disp_newspaper(url):
 
 
 def dwnld_page(url):  # url of page
-    """Downloads the OCR text of a newspaper page. Relies on valid url from assemble_issue()
+    """Downloads the OCR text of a newspaper page. 
+    Relies on valid url from assemble_issue()
 
     Params: url -> url of OCR text of page: str
     Return: txt -> OCR text of a newspaper page: str"""
@@ -234,14 +249,15 @@ def lccn_to_disk(dir_name, downloaded_issue):
 
 def validate_date_input(start_end):
     """For CLI UI - Ensures that user enters a valid date.
-    Params: start_end -> str: 'start' or 'end', whether to prompt for start or end date.
+    Params: start_end -> str: 'start' or 'end', whether to prompt for 
+                              start or end date.
     Return: return_date  -> date: validated date to pass to control flow"""
 
     return_date = None
     while return_date == None:
         try:
             return_date = parse_date(input('What is the {} date to download?'
-                                           '(YYYY-MM-DD) > '.format(start_end)))
+                                           '(YYYY-MM-DD) >'.format(start_end)))
         except ValueError:
             print('Invalid Date')
             continue
@@ -276,7 +292,7 @@ def main():
 
     lccn_to_disk(news_info['lccn'], news_data)
 
-    # print('Data available in this session: news_data, news_info, start_date, '
+    # print('Data available in this session: news_data, news_info, start_date,'
     #       'end_date')
     # print()
     print('The data is also saved to disk in the working directory in a '
