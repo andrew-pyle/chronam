@@ -30,6 +30,8 @@ SOFTWARE.
 """
 
 # TODO: API documentation, module dependencies
+# TODO: Bugs 1. dwnld_newspaper() fails on network timeout
+#            2. '-ed-2' suffix not robust to > 2 editions
 
 import json
 import os
@@ -256,8 +258,9 @@ def validate_date_input(start_end):
     return_date = None
     while return_date == None:
         try:
-            return_date = parse_date(input('What is the {} date to download?'
-                                           '(YYYY-MM-DD) >'.format(start_end)))
+            return_date = parse_date(
+                    input('What is the {} date to download?'
+                          '(YYYY-MM-DD)\n> '.format(start_end)))
         except ValueError:
             print('Invalid Date')
             continue
