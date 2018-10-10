@@ -32,6 +32,7 @@ SOFTWARE.
 # TODO: API documentation, module dependencies
 # TODO: Bugs 1. dwnld_newspaper() fails on network timeout
 #            2. '-ed-2' suffix not robust to > 2 editions
+# TODO Create Build Process: requirements.txt vs conda environment.yml, CD/CI?
 
 import json
 import os
@@ -122,7 +123,7 @@ def get_txt(url):
     return retrieved_txt
 
 
-def disp_newspaper(url):
+def display_newspaper(url):
     """Displays information and issues available for a given newspaper
 
     Parameters: url -> url of JSON file for newspaper: str
@@ -152,7 +153,7 @@ def disp_newspaper(url):
     print(issues_string)
 
 
-def dwnld_page(url):  # url of page
+def download_page(url):  # url of page
     """Downloads the OCR text of a newspaper page. 
     Relies on valid url from assemble_issue()
 
@@ -172,7 +173,7 @@ def assemble_issue(url):  # url of issue
 
     issue_string = ''
     for page in get_json(url)['pages']:
-        issue_string += dwnld_page(page['url'])
+        issue_string += download_page(page['url'])
     return issue_string  # str 'alltextforallpages'
 
 
@@ -189,7 +190,7 @@ def parse_date(datestring):
 
 # TODO: allow restarting of downloads -> the function checks if the issue is
 #       in the data structure or not
-def dwnld_newspaper(url, start_date, end_date):
+def download_newspaper(url, start_date, end_date):
     """Downloads OCR text of a newspaper from chroniclingamerica.loc.gov by
     parsing the .json representation using the exposed API. Traverses
     the json from the newspaper .json url to each page and composes them into
@@ -280,7 +281,7 @@ def main():
     print()
 
     news_info = get_json(url)
-    disp_newspaper(url)
+    display_newspaper(url)
 
     # looping, validated date input
     start_date = validate_date_input('start')
@@ -288,7 +289,7 @@ def main():
 
     print()
     try:
-        news_data = dwnld_newspaper(url, start_date=start_date,
+        news_data = download_newspaper(url, start_date=start_date,
                                     end_date=end_date)
     except ValueError as e:
         return e
