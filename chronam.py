@@ -208,8 +208,8 @@ def download_newspaper(url, start_date, end_date):
 
     try:
         for issue in get_json(url)['issues']:
-            if (parse_date(issue['date_issued']) >= start_date and
-                    parse_date(issue['date_issued']) <= end_date):
+            issue_date = parse_date(issue['date_issued'])
+            if (issue_date >= start_date and issue_date <= end_date):
                 if issue['date_issued'] not in newspaper_issues:
                     print(issue['date_issued'])
                     newspaper_issues[issue['date_issued']] = \
