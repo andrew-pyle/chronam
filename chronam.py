@@ -80,8 +80,7 @@ def get_json(url):
             print('Error code: ', e.code)
             print('url: ', url)
     else:
-        # read().decode('utf-8') is necessary for Python 3.4
-        json_dict = json.loads(data.read(), encoding='utf-8')
+        json_dict = json.load(data)
         return json_dict
 
 
