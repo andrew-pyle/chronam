@@ -108,3 +108,6 @@ sn*/
 
 # VS Code
 .vscode/
+
+# OS Files
+.DS_Store

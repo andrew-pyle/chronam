@@ -161,9 +161,7 @@ def assemble_issue(url):  # url of issue
     Params: url -> url of newspaper issue: str
     Return: txt -> OCR text of all pages in newspaper: str"""
 
-    issue_string = ''
-    for page in get_json(url)['pages']:
-        issue_string += download_page(page['url'])
+    issue_string = ''.join(download_page(page['url']) for page in get_json(url)['pages'])
     return issue_string  # str 'alltextforallpages'
 
 
