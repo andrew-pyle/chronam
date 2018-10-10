@@ -235,7 +235,6 @@ def lccn_to_disk(dir_name, downloaded_issue):
    for date, text in downloaded_issue.items():
        with open(os.path.join(dir_name, date + '.txt'), 'w') as f:
            f.write(text)
-   return
 
 
 def validate_date_input(start_end):
