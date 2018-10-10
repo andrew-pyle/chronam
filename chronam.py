@@ -50,12 +50,9 @@ def validate_chronam_url(url):
     Params: url -> url of JSON file for newspaper to download: str
     Return: Boolean"""
 
-    domain_chk = 'chroniclingamerica.loc.gov/lccn/sn'
-    json_chk = '.json'
-    if domain_chk in url and json_chk in url:
-        return True
-    else:
-        return False
+    domain_check = 'chroniclingamerica.loc.gov/lccn/sn' in url
+    json_check = '.json' in url
+    return domain_check and json_check
 
 
 def get_json(url):
