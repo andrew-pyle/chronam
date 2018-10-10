@@ -134,14 +134,8 @@ def display_newspaper(url):
     except ValueError as e:
         return e
 
-    newspaper_string = ('{} | Library of Congress No.: {} | {}\nPublished '
-                        'from {} to {} by {}').format(
-                           newspaper_json['name'],
-                           newspaper_json['lccn'],
-                           newspaper_json['place_of_publication'],
-                           newspaper_json['start_year'],
-                           newspaper_json['end_year'],
-                           newspaper_json['publisher'])
+    newspaper_string = ('{name} | Library of Congress No.: {lccn} | {place_of_publication}\n'
+                        'Published from {start_year} to {end_year} by {publisher}').format(**newspaper_json)
 
     issues_string = ('Number of Issues Downloadable: {}\nFirst issue: {}\n'
                      'Last Issue: {}\n').format(
