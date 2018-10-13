@@ -253,12 +253,50 @@ def lccn_to_disk(dir_name, downloaded_issue):
     return number_of_files_written
 
 
+def get_newspaper_url_by_lccn(lccn):
+    url = 'http://chroniclingamerica.loc.gov/lccn/{}.json'.format(lccn)
+    if validate_chronam_url(url) is True:
+        return url
+    else:
+        raise ValueError('No JSON representation for this LCCN found at '
+                         'chroniclingamerica.loc.gov')
 
 
+def cli_interface():
+    try:
+        ui_greeting()
+        # url = ui_get_newspaper_url()
+        lccn = ui_get_newspaper_lccn()
+        url = get_newspaper_url_by_lccn(lccn)
+        display_newspaper(url)
+        start_date = ui_date_input('start')
+        end_date = ui_date_input('end')
+        newspaper_ocr_text = download_newspaper(url, start_date=start_date,
+                                                end_date=end_date)
+        ui_save_newspaper_text_to_disk(lccn, newspaper_ocr_text)
+    except ValueError as e:
+        print('Exiting due to error:', e, sep='\n')
 
 
+def ui_greeting():
+    print('Welcome to Chronicling America Downloader')
 
-def validate_date_input(start_end):
+
+def ui_get_newspaper_url():
+    url = input('enter a url: ')
+    if validate_chronam_url(url) is True:
+        return url
+    else:
+        raise ValueError('Invalid url for chroniclingamerica.loc.gov OCR '
+                         'newspaper (url must end in .json)')
+
+
+def ui_get_newspaper_lccn():
+    lccn = input('enter a Library of Congress No. (LCCN): ')
+    return lccn.strip().lower()
+
+
+def ui_date_input(start_end):
     """For CLI UI - Ensures that user enters a valid date.
     Params: start_end -> str: 'start' or 'end', whether to prompt for 
                               start or end date.
@@ -274,6 +312,16 @@ def validate_date_input(start_end):
             print('Invalid Date')
             continue
     return return_date
+
+
+def ui_save_newspaper_text_to_disk(lccn, newspaper_text_by_date):
+    """Saves Data to disk and prints appropriate CLI UI messages
+    """
+    # Call function to write to disk
+    number_of_files_written = lccn_to_disk(lccn, newspaper_text_by_date)
+    # Print appropriate message to user
+    print('Data saved to {}'.format(os.curdir))
+    print('{} files written to disk'.format(number_of_files_written))
 
 def main():
     """Basic Use Case. Called when file is run.
@@ -291,9 +339,10 @@ def main():
     news_info = get_json(url)
     display_newspaper(url)
 
+
     # looping, validated date input
-    start_date = validate_date_input('start')
-    end_date = validate_date_input('end')
+    start_date = ui_date_input('start')
+    end_date = ui_date_input('end')
 
     print()
     try:
@@ -311,4 +360,5 @@ def main():
           'folder named the lccn number for the newspaper')
 
 if __name__ == "__main__":
-    main()
+    # main()
+    cli_interface()
