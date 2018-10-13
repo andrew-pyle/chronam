@@ -125,16 +125,13 @@ def display_newspaper(url):
     Parameters: url -> url of JSON file for newspaper: str
     Returns:    newspaper_json -> dict: JSON from http request"""
 
-    try:
-        newspaper_json = get_json(url)
-    except ValueError as e:
-        return e
-
-    newspaper_string = ('{name} | Library of Congress No.: {lccn} | {place_of_publication}\n'
-                        'Published from {start_year} to {end_year} by {publisher}').format(**newspaper_json)
+    newspaper_json = get_json(url)
+    newspaper_string = ('{name} | Library of Congress No.: {lccn}'
+        ' | {place_of_publication}\nPublished from {start_year} to'
+        ' {end_year} by {publisher}').format(**newspaper_json)
 
     issues_string = ('Number of Issues Downloadable: {}\nFirst issue: {}\n'
-                     'Last Issue: {}\n').format(
+                    'Last Issue: {}\n').format(
                         len(newspaper_json['issues']),
                         newspaper_json['issues'][0]['date_issued'],
                         newspaper_json['issues'][-1]['date_issued'])
@@ -154,6 +151,7 @@ def download_page(url):  # url of page
     txt = get_txt(txt_url)
     return txt
 
+
 def assemble_issue(url):  # url of issue
     """Assembles the OCR text for each page of a newspaper.
     Relies on valid url from dwnld_newspaper()
@@ -161,7 +159,8 @@ def assemble_issue(url):  # url of issue
     Params: url -> url of newspaper issue: str
     Return: txt -> OCR text of all pages in newspaper: str"""
 
-    issue_string = ''.join(download_page(page['url']) for page in get_json(url)['pages'])
+    issue_string = ''.join(download_page(page['url']) for 
+        page in get_json(url)['pages'])
     return issue_string  # str 'alltextforallpages'
 
 
