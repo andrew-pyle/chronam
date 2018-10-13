@@ -217,23 +217,45 @@ def download_newspaper(url, start_date, end_date):
         return e
 
 
-# TODO: Dir already exists exception handling
 def lccn_to_disk(dir_name, downloaded_issue):
-   """Saves a dict of downloaded issues to disk. Creates a directory:
+    """Saves a dict of downloaded issues to disk. Creates a directory:
 
-   dir_name
-     |--key1.txt
-     |--key2.txt
-     +--key3.txt
+    dir_name
+        |--key1.txt
+        |--key2.txt
+        +--key3.txt
 
-   Params: dir_name -> str: name of created directory for data
-           downloaded_issue -> dict: {'YYYY-MM-DD': 'string of txt'}"""
+    Params: dir_name -> str: name of created directory for data
+            downloaded_issue -> dict: {'YYYY-MM-DD': 'string of txt'}
+    Returns: (int): number of files written in created directory"""
 
-   if not os.path.exists(dir_name):
-       os.makedirs(dir_name)
-   for date, text in downloaded_issue.items():
-       with open(os.path.join(dir_name, date + '.txt'), 'w') as f:
-           f.write(text)
+    # Make directory if it doesn't exist
+    if not os.path.exists(dir_name):
+        os.makedirs(dir_name)
+
+    # Make directory with proper appendix number if the original directory
+    # already exists
+    while not os.path.exists(dir_name):
+        dir_copy_number = 1
+        dir_name = '{} (copy {})'.format(dir_name, str(dir_copy_number))
+        if not os.path.exists(dir_name):
+            os.makedirs(dir_name)
+        else:
+            dir_copy_number += 1
+    
+    # Write to disk
+    number_of_files_written = 0
+    for date, text in downloaded_issue.items():
+        with open(os.path.join(dir_name, date + '.txt'), 'w') as f:
+            f.write(text)
+        number_of_files_written += 1
+    
+    return number_of_files_written
+
+
+
+
+
 
 
 def validate_date_input(start_end):
