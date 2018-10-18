@@ -218,35 +218,65 @@ def download_newspaper(url, start_date, end_date):
 
 
 def lccn_to_disk(dir_name, downloaded_issue):
-    """Saves a dict of downloaded issues to disk. Creates a directory:
+    """Write a dict of downloaded issues to disk at current working directory.
+
+    Saves a directory named by the dir_name parameter in at os.getcwd().
+    Parameter downloaded_issue is unpacked and saved. Each dict key is the
+    filename and the dict value is the text file contents. 
 
     dir_name
         |--key1.txt
         |--key2.txt
         +--key3.txt
 
-    Params: dir_name -> str: name of created directory for data
-            downloaded_issue -> dict: {'YYYY-MM-DD': 'string of txt'}
-    Returns: (int): number of files written in created directory"""
+    Args:
+        filepath (str): location on disk to save dir_name. Defaults to current
+            working directory.
+        dir_name (str): name of created directory for data
+        downloaded_issue (dict): {'YYYY-MM-DD': 'string of newspaper txt'}
+
+    Returns:
+        (int): number of files written in created directory"""
+
+    # Make the directory with recursive naming to avoid collisions
+    def makedirs_with_rename(dir_name, copy_number=0):
+        """Creates directory while avoiding name collisions recursively.
+
+        Creates directory at current working directory, with name of
+        `dir_name`. If `dir_name` already exists, appends a unique suffix to
+        `dir_name` and tries to write again. Recursion ends when a directory is
+        created on disk.
+
+        Args:
+            dir_name (str): Directory name to create. Used if no name collision
+                exists.
+            copy_number (int): Used to recursively create unique name suffix.
+                Does not need to be supplied; only exists for use in recursive
+                calls.
+
+        Returns:
+            (str): Name of directory written to disk
+        """
+        if copy_number == 0:
+            dir_name_attempt = dir_name
+        else:
+            dir_name_attempt = '{} (copy {})'.format(dir_name, str(copy_number))
+
+        try:
+            os.makedirs(dir_name_attempt)
+            return dir_name_attempt
+        except FileExistsError:
+            dir_name_used = makedirs_with_rename(dir_name, copy_number+1)
+        return dir_name_used
 
     # Make directory if it doesn't exist
-    if not os.path.exists(dir_name):
-        os.makedirs(dir_name)
+    dir_name_used = makedirs_with_rename(dir_name)
 
-    # Make directory with proper appendix number if the original directory
-    # already exists
-    while not os.path.exists(dir_name):
-        dir_copy_number = 1
-        dir_name = '{} (copy {})'.format(dir_name, str(dir_copy_number))
-        if not os.path.exists(dir_name):
-            os.makedirs(dir_name)
-        else:
-            dir_copy_number += 1
-    
     # Write to disk
     number_of_files_written = 0
     for date, text in downloaded_issue.items():
-        with open(os.path.join(dir_name, date + '.txt'), 'w') as f:
+        # Write file relative to current working directory
+        with open(os.path.join(dir_name_used, date + '.txt'), 'w') as f:
             f.write(text)
         number_of_files_written += 1
     
@@ -295,7 +325,7 @@ def ui_get_newspaper_lccn():
     lccn = input('enter a Library of Congress No. (LCCN): ')
     return lccn.strip().lower()
 
-
+# TODO Make error ondates before start or after end date of newspaper
 def ui_date_input(start_end):
     """For CLI UI - Ensures that user enters a valid date.
     Params: start_end -> str: 'start' or 'end', whether to prompt for 
@@ -317,11 +347,11 @@ def ui_date_input(start_end):
 def ui_save_newspaper_text_to_disk(lccn, newspaper_text_by_date):
     """Saves Data to disk and prints appropriate CLI UI messages
     """
-    # Call function to write to disk
+    # Write to disk at current working directory
     number_of_files_written = lccn_to_disk(lccn, newspaper_text_by_date)
     # Print appropriate message to user
-    print('Data saved to {}'.format(os.curdir))
-    print('{} files written to disk'.format(number_of_files_written))
+    print('{} file(s) written to disk'.format(number_of_files_written))
+    print('Data saved to: `{}`'.format(os.getcwd()))
 
 def main():
     """Basic Use Case. Called when file is run.
