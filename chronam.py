@@ -291,11 +291,10 @@ def get_newspaper_url_by_lccn(lccn):
         raise ValueError('No JSON representation for this LCCN found at '
                          'chroniclingamerica.loc.gov')
 
-
+# TODO Exception logging?
 def cli_interface():
     try:
         ui_greeting()
-        # url = ui_get_newspaper_url()
         lccn = ui_get_newspaper_lccn()
         url = get_newspaper_url_by_lccn(lccn)
         display_newspaper(url)
@@ -305,13 +304,17 @@ def cli_interface():
                                                 end_date=end_date)
         ui_save_newspaper_text_to_disk(lccn, newspaper_ocr_text)
     except ValueError as e:
-        print('Exiting due to error:', e, sep='\n')
+        print('Exiting due to error:', e)
+    except IOError as e:
+        print('Error writing to file:', e)
 
 
 def ui_greeting():
     print('Welcome to Chronicling America Downloader')
 
 
+# Deprecated in favor of accepting LCCNs from CLI.
+# See ui_get_newspaper_lccn() & get_newspaper_url_by_lccn()
 def ui_get_newspaper_url():
     url = input('enter a url: ')
     if validate_chronam_url(url) is True:
@@ -357,42 +360,6 @@ def ui_save_newspaper_text_to_disk(lccn, newspaper_text_by_date):
     print('{} file(s) written to disk'.format(number_of_files_written))
     print('Data saved to: `{}`'.format(os.getcwd()))
 
-def main():
-    """Basic Use Case. Called when file is run.
-    Example Terminal interaction:
-        input: .json newspaper url
-        output: info blurb of newspaper
-        input: start date
-        input: end date
-        output: saves issues to disk in a directory named the lccn number"""
-
-    print('Welcome to Chronicling America Downloader')
-    url = input('enter a url: ')
-    print()
-
-    news_info = get_json(url)
-    display_newspaper(url)
-
-
-    # looping, validated date input
-    start_date = ui_date_input('start')
-    end_date = ui_date_input('end')
-
-    print()
-    try:
-        news_data = download_newspaper(url, start_date=start_date,
-                                    end_date=end_date)
-    except ValueError as e:
-        return e
-
-    lccn_to_disk(news_info['lccn'], news_data)
-
-    # print('Data available in this session: news_data, news_info, start_date,'
-    #       'end_date')
-    # print()
-    print('The data is also saved to disk in the working directory in a '
-          'folder named the lccn number for the newspaper')
 
 if __name__ == "__main__":
-    # main()
     cli_interface()
