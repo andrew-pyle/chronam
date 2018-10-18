@@ -118,7 +118,7 @@ def get_txt(url):
         retrieved_txt = data.read().decode('utf-8')
     return retrieved_txt
 
-
+# TODO Make robust to missing kwargs in JSON returned by get_json()
 def display_newspaper(url):
     """Displays information and issues available for a given newspaper
 
@@ -164,7 +164,7 @@ def assemble_issue(url):  # url of issue
     return issue_string  # str 'alltextforallpages'
 
 
-def parse_date(datestring):
+def parse_date_YYYY_MM_DD(datestring):
     """Converts YYYY-MM-DD string into date object
 
     Params: date -> str: 'YYYY-MM-DD'
@@ -201,7 +201,7 @@ def download_newspaper(url, start_date, end_date):
 
     try:
         for issue in get_json(url)['issues']:
-            issue_date = parse_date(issue['date_issued'])
+            issue_date = parse_date_YYYY_MM_DD(issue['date_issued'])
             if (issue_date >= start_date and issue_date <= end_date):
                 if issue['date_issued'] not in newspaper_issues:
                     print(issue['date_issued'])
@@ -279,7 +279,7 @@ def lccn_to_disk(dir_name, downloaded_issue):
         with open(os.path.join(dir_name_used, date + '.txt'), 'w') as f:
             f.write(text)
         number_of_files_written += 1
-    
+
     return number_of_files_written
 
 
@@ -325,17 +325,21 @@ def ui_get_newspaper_lccn():
     lccn = input('enter a Library of Congress No. (LCCN): ')
     return lccn.strip().lower()
 
+
 # TODO Make error ondates before start or after end date of newspaper
 def ui_date_input(start_end):
     """For CLI UI - Ensures that user enters a valid date.
-    Params: start_end -> str: 'start' or 'end', whether to prompt for 
-                              start or end date.
-    Return: return_date  -> date: validated date to pass to control flow"""
+    
+    Args: 
+        start_end (str): 'start' or 'end', whether to prompt for 
+            start or end date.
+    Returns:
+        return_date (date): validated date to pass to control flow"""
 
     return_date = None
     while return_date == None:
         try:
-            return_date = parse_date(
+            return_date = parse_date_YYYY_MM_DD(
                     input('What is the {} date to download?'
                           '(YYYY-MM-DD)\n> '.format(start_end)))
         except ValueError:
