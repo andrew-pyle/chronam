@@ -37,6 +37,7 @@ SOFTWARE.
 import json
 import os
 
+from requests import Session
 from datetime import datetime
 from urllib.request import Request, urlopen
 from urllib.error import URLError
