@@ -7,7 +7,7 @@ Module to query the http://chroniclingamerica.loc.gov API. Provides functions
 to assemble the txt files for a given newspaper and issue held in the archive
 into a dict keyed on the date ('YYYY-MM-DD')
 ------------------------------
-Copyright (c) 2017 Andrew Pyle.
+Copyright (c) 2017-2018 Andrew Pyle.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -43,17 +43,70 @@ from urllib.request import Request, urlopen
 from urllib.error import URLError
 
 
-def validate_chronam_url(url):
-    """"Naive check. Ensures that the url goes to a 
-    chroniclingamerica.loc.gov newspaper and references the .json
-    representation
+# TODO: allow restarting of downloads -> the function checks if the issue is
+#       in the data structure or not
+def download_newspaper(url, start_date, end_date):
+    """Downloads OCR text of a newspaper from chroniclingamerica.loc.gov by
+    parsing the .json representation using the exposed API. Traverses
+    the json from the newspaper .json url to each page and composes them into
+    a dict of issues where {'date': 'issue text'}
 
-    Params: url -> url of JSON file for newspaper to download: str
-    Return: Boolean"""
+    Params: url -> str: base url of newspaper. Ends in .json
+            start_date -> date: date(year, month, day)
+                          represents the first issue to download
+            end_date   -> date: date(year, month, day)
+                          represents the last issue to download
+    Return: newspaper_issues -> dict: {'date': 'issue text'}"""
 
-    domain_check = 'chroniclingamerica.loc.gov/lccn/sn' in url
-    json_check = '.json' in url
-    return domain_check and json_check
+    newspaper_issues = {}
+
+    # Terminal UI Print statements
+    print('start date:', start_date)
+    print('end date:', end_date)
+
+    # Interface
+    print('Getting issues:')
+
+    try:
+        for issue in get_json(url)['issues']:
+            issue_date = parse_date_YYYY_MM_DD(issue['date_issued'])
+            if (issue_date >= start_date and issue_date <= end_date):
+                if issue['date_issued'] not in newspaper_issues:
+                    print(issue['date_issued'])
+                    newspaper_issues[issue['date_issued']] = \
+                        assemble_issue(issue['url'])
+                else:
+                    print(issue['date_issued'] + '-ed-2')
+                    newspaper_issues[issue['date_issued'] + '-ed-2'] = \
+                        assemble_issue(issue['url'])
+        return newspaper_issues # dict {'date_issued': 'alltextforallpages'}
+
+    except ValueError as e:
+        return e
+
+
+def assemble_issue(url):  # url of issue
+    """Assembles the OCR text for each page of a newspaper.
+    Relies on valid url from dwnld_newspaper()
+
+    Params: url -> url of newspaper issue: str
+    Return: txt -> OCR text of all pages in newspaper: str"""
+
+    issue_string = ''.join(download_page(page['url']) for 
+        page in get_json(url)['pages'])
+    return issue_string  # str 'alltextforallpages'
+
+
+def download_page(url):  # url of page
+    """Downloads the OCR text of a newspaper page. 
+    Relies on valid url from assemble_issue()
+
+    Params: url -> url of OCR text of page: str
+    Return: txt -> OCR text of a newspaper page: str"""
+
+    txt_url = get_json(url)['text']
+    txt = get_txt(txt_url)
+    return txt
 
 
 def get_json(url):
@@ -119,6 +172,30 @@ def get_txt(url):
         retrieved_txt = data.read().decode('utf-8')
     return retrieved_txt
 
+def validate_chronam_url(url):
+    """"Naive check. Ensures that the url goes to a 
+    chroniclingamerica.loc.gov newspaper and references the .json
+    representation
+
+    Params: url -> url of JSON file for newspaper to download: str
+    Return: Boolean"""
+
+    domain_check = 'chroniclingamerica.loc.gov/lccn/sn' in url
+    json_check = '.json' in url
+    return domain_check and json_check
+
+
+def parse_date_YYYY_MM_DD(datestring):
+    """Converts YYYY-MM-DD string into date object
+
+    Params: date -> str: 'YYYY-MM-DD'
+    Return: return_date -> date"""
+
+    date_fmt_str = '%Y-%m-%d'
+    return_date = datetime.strptime(datestring, date_fmt_str).date()
+    return return_date
+
+
 # TODO Make robust to missing kwargs in JSON returned by get_json()
 def display_newspaper(url):
     """Displays information and issues available for a given newspaper
@@ -140,82 +217,6 @@ def display_newspaper(url):
     print('------------------------')
     print(issues_string)
 
-
-def download_page(url):  # url of page
-    """Downloads the OCR text of a newspaper page. 
-    Relies on valid url from assemble_issue()
-
-    Params: url -> url of OCR text of page: str
-    Return: txt -> OCR text of a newspaper page: str"""
-
-    txt_url = get_json(url)['text']
-    txt = get_txt(txt_url)
-    return txt
-
-
-def assemble_issue(url):  # url of issue
-    """Assembles the OCR text for each page of a newspaper.
-    Relies on valid url from dwnld_newspaper()
-
-    Params: url -> url of newspaper issue: str
-    Return: txt -> OCR text of all pages in newspaper: str"""
-
-    issue_string = ''.join(download_page(page['url']) for 
-        page in get_json(url)['pages'])
-    return issue_string  # str 'alltextforallpages'
-
-
-def parse_date_YYYY_MM_DD(datestring):
-    """Converts YYYY-MM-DD string into date object
-
-    Params: date -> str: 'YYYY-MM-DD'
-    Return: return_date -> date"""
-
-    date_fmt_str = '%Y-%m-%d'
-    return_date = datetime.strptime(datestring, date_fmt_str).date()
-    return return_date
-
-
-# TODO: allow restarting of downloads -> the function checks if the issue is
-#       in the data structure or not
-def download_newspaper(url, start_date, end_date):
-    """Downloads OCR text of a newspaper from chroniclingamerica.loc.gov by
-    parsing the .json representation using the exposed API. Traverses
-    the json from the newspaper .json url to each page and composes them into
-    a dict of issues where {'date': 'issue text'}
-
-    Params: url -> str: base url of newspaper. Ends in .json
-            start_date -> date: date(year, month, day)
-                          represents the first issue to download
-            end_date   -> date: date(year, month, day)
-                          represents the last issue to download
-    Return: newspaper_issues -> dict: {'date': 'issue text'}"""
-
-    newspaper_issues = {}
-
-    # Terminal UI Print statements
-    print('start date:', start_date)
-    print('end date:', end_date)
-
-    # Interface
-    print('Getting issues:')
-
-    try:
-        for issue in get_json(url)['issues']:
-            issue_date = parse_date_YYYY_MM_DD(issue['date_issued'])
-            if (issue_date >= start_date and issue_date <= end_date):
-                if issue['date_issued'] not in newspaper_issues:
-                    print(issue['date_issued'])
-                    newspaper_issues[issue['date_issued']] = \
-                        assemble_issue(issue['url'])
-                else:
-                    print(issue['date_issued'] + '-ed-2')
-                    newspaper_issues[issue['date_issued'] + '-ed-2'] = \
-                        assemble_issue(issue['url'])
-        return newspaper_issues # dict {'date_issued': 'alltextforallpages'}
-
-    except ValueError as e:
-        return e
 
 def makedirs_with_rename(dir_name, copy_number=0):
     """Creates directory while avoiding name collisions recursively.
@@ -385,8 +386,6 @@ def ui_save_newspaper_text_to_disk(dir_name, newspaper_text_by_date):
     print('{} file(s) written to disk'.format(number_of_files_written))
     real_path = os.path.join(os.getcwd(), dir_name)
     print('Data saved to: `{}`'.format(real_path))
-
-
 
 
 if __name__ == "__main__":
