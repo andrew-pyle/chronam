@@ -234,11 +234,11 @@ def makedirs_with_rename(dir_name, copy_number=0):
     Returns:
         (str): Name of directory written to disk
     """
-    if copy_number == 0:
-        dir_name_attempt = dir_name
-    else:
-        dir_name_attempt = '{} (copy {})'.format(dir_name, str(copy_number))
+    # Use dir_name first, then add new suffix if that directory already exists
+    dir_name_attempt = dir_name if copy_number == 0 else '{} (copy {})'.format(
+        dir_name, str(copy_number))
 
+    # Recursively either create directory or get a new suffix and try again
     try:
         os.makedirs(dir_name_attempt)
         return dir_name_attempt
