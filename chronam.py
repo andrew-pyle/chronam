@@ -172,6 +172,16 @@ def get_txt(url):
         retrieved_txt = data.read().decode('utf-8')
     return retrieved_txt
 
+
+def get_newspaper_url_by_lccn(lccn):
+    url = 'http://chroniclingamerica.loc.gov/lccn/{}.json'.format(lccn)
+    if validate_chronam_url(url) is True:
+        return url
+    else:
+        raise ValueError('No JSON representation for this LCCN found at '
+                         'chroniclingamerica.loc.gov')
+
+
 def validate_chronam_url(url):
     """"Naive check. Ensures that the url goes to a 
     chroniclingamerica.loc.gov newspaper and references the .json
@@ -194,28 +204,6 @@ def parse_date_YYYY_MM_DD(datestring):
     date_fmt_str = '%Y-%m-%d'
     return_date = datetime.strptime(datestring, date_fmt_str).date()
     return return_date
-
-
-# TODO Make robust to missing kwargs in JSON returned by get_json()
-def display_newspaper(url):
-    """Displays information and issues available for a given newspaper
-
-    Parameters: url -> url of JSON file for newspaper: str
-    Returns:    newspaper_json -> dict: JSON from http request"""
-
-    newspaper_json = get_json(url)
-    newspaper_string = ('{name} | Library of Congress No.: {lccn}'
-        ' | {place_of_publication}\nPublished from {start_year} to'
-        ' {end_year} by {publisher}').format(**newspaper_json)
-
-    issues_string = ('Number of Issues Downloadable: {}\nFirst issue: {}\n'
-                    'Last Issue: {}\n').format(
-                        len(newspaper_json['issues']),
-                        newspaper_json['issues'][0]['date_issued'],
-                        newspaper_json['issues'][-1]['date_issued'])
-    print(newspaper_string)
-    print('------------------------')
-    print(issues_string)
 
 
 def makedirs_with_rename(dir_name, copy_number=0):
@@ -285,22 +273,13 @@ def lccn_to_disk(dir_name, downloaded_issue):
 
     return number_of_files_written
 
-
-def get_newspaper_url_by_lccn(lccn):
-    url = 'http://chroniclingamerica.loc.gov/lccn/{}.json'.format(lccn)
-    if validate_chronam_url(url) is True:
-        return url
-    else:
-        raise ValueError('No JSON representation for this LCCN found at '
-                         'chroniclingamerica.loc.gov')
-
 # TODO Exception logging?
 def cli_interface():
     try:
         ui_greeting()
         lccn = ui_get_newspaper_lccn()
         url = get_newspaper_url_by_lccn(lccn)
-        display_newspaper(url)
+        ui_display_newspaper(url)
         start_date = ui_date_input('start')
         end_date = ui_date_input('end')
         newspaper_ocr_text = download_newspaper(url, start_date=start_date,
@@ -330,6 +309,28 @@ def ui_get_newspaper_url():
 def ui_get_newspaper_lccn():
     lccn = input('enter a Library of Congress No. (LCCN): ')
     return lccn.strip().lower()
+
+
+# TODO Make robust to missing kwargs in JSON returned by get_json()
+def ui_display_newspaper(url):
+    """Displays information and issues available for a given newspaper
+
+    Parameters: url -> url of JSON file for newspaper: str
+    Returns:    newspaper_json -> dict: JSON from http request"""
+
+    newspaper_json = get_json(url)
+    newspaper_string = ('{name} | Library of Congress No.: {lccn}'
+        ' | {place_of_publication}\nPublished from {start_year} to'
+        ' {end_year} by {publisher}').format(**newspaper_json)
+
+    issues_string = ('Number of Issues Downloadable: {}\nFirst issue: {}\n'
+                    'Last Issue: {}\n').format(
+                        len(newspaper_json['issues']),
+                        newspaper_json['issues'][0]['date_issued'],
+                        newspaper_json['issues'][-1]['date_issued'])
+    print(newspaper_string)
+    print('------------------------')
+    print(issues_string)
 
 
 # TODO Make error ondates before start or after end date of newspaper
