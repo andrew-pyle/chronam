@@ -216,18 +216,49 @@ def download_newspaper(url, start_date, end_date):
     except ValueError as e:
         return e
 
+def makedirs_with_rename(dir_name, copy_number=0):
+    """Creates directory while avoiding name collisions recursively.
+
+    Creates directory at current working directory, with name of
+    `dir_name`. If `dir_name` already exists, appends a unique suffix to
+    `dir_name` and tries to write again. Recursion ends when a directory is
+    created on disk.
+
+    Args:
+        dir_name (str): Directory name to create. Used if no name collision
+            exists.
+        copy_number (int): Used to recursively create unique name suffix.
+            Does not need to be supplied; only exists for use in recursive
+            calls.
+
+    Returns:
+        (str): Name of directory written to disk
+    """
+    if copy_number == 0:
+        dir_name_attempt = dir_name
+    else:
+        dir_name_attempt = '{} (copy {})'.format(dir_name, str(copy_number))
+
+    try:
+        os.makedirs(dir_name_attempt)
+        return dir_name_attempt
+    except FileExistsError:
+        dir_name_used = makedirs_with_rename(dir_name, copy_number+1)
+    return dir_name_used
+
 
 def lccn_to_disk(dir_name, downloaded_issue):
     """Write a dict of downloaded issues to disk at current working directory.
 
-    Saves a directory named by the dir_name parameter in at os.getcwd().
-    Parameter downloaded_issue is unpacked and saved. Each dict key is the
-    filename and the dict value is the text file contents. 
+    Saves a directory named by the dir_name parameter at os.getcwd(). Raises
+    FileNotFoundError if directory named by parameter `dir_name` does not
+    already exist. Parameter `downloaded_issue` is unpacked and saved. Each
+    dict key is the filename and the dict value is the text file contents.
 
     dir_name
         |--key1.txt
         |--key2.txt
-        +--key3.txt
+        ∟--key3.txt
 
     Args:
         filepath (str): location on disk to save dir_name. Defaults to current
@@ -236,47 +267,17 @@ def lccn_to_disk(dir_name, downloaded_issue):
         downloaded_issue (dict): {'YYYY-MM-DD': 'string of newspaper txt'}
 
     Returns:
-        (int): number of files written in created directory"""
+        int: number of files written in created directory
 
-    # Make the directory with recursive naming to avoid collisions
-    def makedirs_with_rename(dir_name, copy_number=0):
-        """Creates directory while avoiding name collisions recursively.
-
-        Creates directory at current working directory, with name of
-        `dir_name`. If `dir_name` already exists, appends a unique suffix to
-        `dir_name` and tries to write again. Recursion ends when a directory is
-        created on disk.
-
-        Args:
-            dir_name (str): Directory name to create. Used if no name collision
-                exists.
-            copy_number (int): Used to recursively create unique name suffix.
-                Does not need to be supplied; only exists for use in recursive
-                calls.
-
-        Returns:
-            (str): Name of directory written to disk
-        """
-        if copy_number == 0:
-            dir_name_attempt = dir_name
-        else:
-            dir_name_attempt = '{} (copy {})'.format(dir_name, str(copy_number))
-
-        try:
-            os.makedirs(dir_name_attempt)
-            return dir_name_attempt
-        except FileExistsError:
-            dir_name_used = makedirs_with_rename(dir_name, copy_number+1)
-        return dir_name_used
-
-    # Make directory if it doesn't exist
-    dir_name_used = makedirs_with_rename(dir_name)
-
-    # Write to disk
+    Raises:
+        FileNotFoundError: Raised if a directory named by parameter `dir_name`
+            does not exist.
+        IOError: Raised if writing file fails.
+    """
     number_of_files_written = 0
     for date, text in downloaded_issue.items():
         # Write file relative to current working directory
-        with open(os.path.join(dir_name_used, date + '.txt'), 'w') as f:
+        with open(os.path.join(dir_name, date + '.txt'), 'w') as f:
             f.write(text)
         number_of_files_written += 1
 
@@ -351,14 +352,40 @@ def ui_date_input(start_end):
     return return_date
 
 
-def ui_save_newspaper_text_to_disk(lccn, newspaper_text_by_date):
-    """Saves Data to disk and prints appropriate CLI UI messages
+# TODO Put "no merge" limitation for newspapers into readme.md
+def ui_save_newspaper_text_to_disk(dir_name, newspaper_text_by_date):
+    """Saves data to disk at current working directory and prints UI messages.
+
+    Makes new directory named by the `dir_name` parameter, adding a suffix to
+    avoid naming collisions. Does not merge issues from current call into an
+    equally named directory already present on disk.
+
+    Args:
+        dir_name (str): Name of directory in which to save newspaper text
+            files. Creates directory if it doesn't exist. Adds unique suffix to
+            `dir_name` if a directory with the name already exists.
+        newspaper_text_by_date (dict): Dict where keys are filenames and values
+            are text file contents to save.
+
+    Returns:
+        Nothing. Has side-effects on filesystem.
+
+    Raises:
+        IOError: Bubbles up from `lccn_to_disk()` if writing files fails.
+        FileNotFoundError: Bubbles up from `lccn_to_disk()` if supplied
+            `dir_name` doesn't exist.
     """
-    # Write to disk at current working directory
-    number_of_files_written = lccn_to_disk(lccn, newspaper_text_by_date)
-    # Print appropriate message to user
+    # Create a directory in current working directory with recursive naming to
+    # avoid collisions
+    dir_name = makedirs_with_rename(dir_name)
+    # Write to disk in created directory
+    number_of_files_written = lccn_to_disk(dir_name, newspaper_text_by_date)
+    # Show filesystem changes to user
     print('{} file(s) written to disk'.format(number_of_files_written))
-    print('Data saved to: `{}`'.format(os.getcwd()))
+    real_path = os.path.join(os.getcwd(), dir_name)
+    print('Data saved to: `{}`'.format(real_path))
+
+
 
 
 if __name__ == "__main__":
