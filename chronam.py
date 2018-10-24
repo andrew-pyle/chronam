@@ -6,6 +6,9 @@ chronam Module
 Module to query the http://chroniclingamerica.loc.gov API. Provides functions
 to assemble the txt files for a given newspaper and issue held in the archive
 into a dict keyed on the date ('YYYY-MM-DD')
+
+TODO: API documentation, module dependencies
+TODO: Create Build Process: requirements.txt vs conda environment.yml, CD/CI?
 ------------------------------
 Copyright (c) 2017-2018 Andrew Pyle.
 
@@ -29,11 +32,6 @@ SOFTWARE.
 ------------------------------
 """
 
-# TODO: API documentation, module dependencies
-# TODO: Bugs 1. dwnld_newspaper() fails on network timeout
-#            2. '-ed-2' suffix not robust to > 2 editions
-# TODO Create Build Process: requirements.txt vs conda environment.yml, CD/CI?
-
 import json
 import os
 
@@ -43,8 +41,6 @@ from urllib.request import Request, urlopen
 from urllib.error import URLError
 
 
-# TODO: allow restarting of downloads -> the function checks if the issue is
-#       in the data structure or not
 def download_newspaper(url, start_date, end_date, session):
     """Downloads OCR text of a newspaper from chroniclingamerica.loc.gov 
     
@@ -52,6 +48,11 @@ def download_newspaper(url, start_date, end_date, session):
         newspaper -> issue -> page -> OCR text
     Concatenates all text into a string and returns a dict of issues keyed on
     issue date with concatenated issue text as values.
+
+    TODO: Allow restarting of downloads -> the function checks if the issue is
+          in the data structure or not
+    TODO: Function fails on network timeout
+    TODO: '-ed-2' suffix not robust to > 2 editions
 
     Args:
         url (str): URL of JSON representation of newspaper. Ends in '.json'
@@ -92,35 +93,53 @@ def download_newspaper(url, start_date, end_date, session):
     return newspaper_issues # dict {'date_issued': 'alltextforallpages'}
 
 
-def assemble_issue(url, session):  # url of issue
+def assemble_issue(url, session):
     """Assembles the OCR text for each page of a newspaper.
     
-    Relies on valid url from dwnld_newspaper()
+    No URL validation performed.
 
-    Params: url -> url of newspaper issue: str
-    Return: txt -> OCR text of all pages in newspaper: str"""
+    Args: 
+        url (str): url of JSON representation of newspaper issue
+        session (requests.Session): Persistent session object to use for HTTP
+            request. From requests module.
+    
+    Returns:
+        str: Concatenated OCR text of all pages in newspaper
+
+    Raises:
+        ValueError: If HTTP response cannot be parsed as a JSON file
+        ConnectionError: Raised for network problems, but not for HTTP response
+            codes, like 404, 500, etc.)
+        HTTPError: Raised for unsuccessful HTTP response
+        Timeout: Raised if request does not receive a response from the server
+            for 10 sec.
+    """
 
     # Concatenate the OCR text for each page in the issue.
     return ''.join(download_ocr_text(page['url'], session) for 
         page in session.get(url).json()['pages'])
 
 
-def download_page(url, session):  # url of page
-    """Downloads the OCR text of a newspaper page. 
-    Relies on valid url from assemble_issue()
+def download_ocr_text(url, session):
+    """Downloads OCR text of newspaper from url of text file.
+
+    No URL validation performed.
 
     Args:
         url (str): url of JSON representation of newspaper page
-        session (requests.Session): Session object for HTTP request. Allows
-            use of already established peristent TCP connection.
+        session (requests.Session): Persistent session object to use for HTTP
+            request. From requests module.
+    
     Returns:
         str: URL of OCR text representation of newspaper page
-    """
-    return session.get(url).json()['text']
 
-
-def download_ocr_text(url, session):
-    """Downloads OCR text of newspaper from url of text file.
+    Raises:
+        ValueError: If HTTP response cannot be parsed as a JSON file
+        ConnectionError: Raised for network problems, but not for HTTP response
+            codes, like 404, 500, etc.)
+        HTTPError: Raised for unsuccessful HTTP response
+        Timeout: Raised if request does not receive a response from the server
+            for 10 sec.
     """
     ocr_text_url = session.get(url).json()['text']
     return session.get(ocr_text_url).text
@@ -150,9 +169,16 @@ def validate_chronam_url(url):
 
 def parse_date_YYYY_MM_DD(datestring):
     """Converts YYYY-MM-DD string into date object
-
-    Params: date -> str: 'YYYY-MM-DD'
-    Return: return_date -> date"""
+    
+    Args:
+        datestring (str): 'YYYY-MM-DD'
+    
+    Returns:
+        datetime.date: date represented by datestring
+    
+    Raises:
+        ValueError: Raised if supplied string doesn't match format YYYY-MM-DD
+    """
 
     date_fmt_str = '%Y-%m-%d'
     return_date = datetime.strptime(datestring, date_fmt_str).date()
@@ -226,10 +252,20 @@ def lccn_to_disk(dir_name, downloaded_issue):
 
     return number_of_files_written
 
-# TODO Exception logging?
-# TODO Set requests session timeout
-# TODO requests raise_for_status() & HTTPError
+
 def cli_interface():
+    """Interface to use the script as a command line application.
+
+    Passes a single session object for all HTTP connections spawned in this
+    function. This is the only place a session is created.
+
+    Returns:
+        None. Prints to console and writes to filesystem 
+
+    TODO: Exception logging?
+    TODO: Set requests session timeout
+    TODO: requests raise_for_status() & HTTPError
+    """
     with Session() as session:
         session.headers.update({'User-Agent': 'Mozilla/5.0'})
         try:
@@ -251,21 +287,18 @@ def cli_interface():
 
 
 def ui_greeting():
+    """Prints appropriate welcome message to user.
+
+    TODO: sweeeeeeet ASCII Art
+    """
     print('Welcome to Chronicling America Downloader')
 
 
-# Deprecated in favor of accepting LCCNs from CLI.
-# See ui_get_newspaper_lccn() & get_newspaper_url_by_lccn()
-def ui_get_newspaper_url():
-    url = input('enter a url: ')
-    if validate_chronam_url(url) is True:
-        return url
-    else:
-        raise ValueError('Invalid url for chroniclingamerica.loc.gov OCR '
-                         'newspaper (url must end in .json)')
-
-
 def ui_get_newspaper_lccn():
+    """Get LCCN for newspaper on http://chroniclingamerica.loc.gov from user.
+
+    TODO: LCCN validation. Length bounds, domain knowledge, must have sn, etc.
+    """
     lccn = input('enter a Library of Congress No. (LCCN): ')
     return lccn.strip().lower()
 
@@ -274,8 +307,13 @@ def ui_get_newspaper_lccn():
 def ui_display_newspaper(url, session):
     """Displays information and issues available for a given newspaper
 
-    Parameters: url -> url of JSON file for newspaper: str
-    Returns:    newspaper_json -> dict: JSON from http request
+    Args:
+        url (str): url of JSON representation of newspaper
+        session (requests.Session): Persistent session object to use for HTTP
+            request. From requests module.
+    
+    Returns:
+        None. Print to console side effects only
     """
     newspaper_json = session.get(url).json()
     newspaper_string = ('{name} | Library of Congress No.: {lccn}'
@@ -298,9 +336,11 @@ def ui_date_input(start_end):
     
     Args: 
         start_end (str): 'start' or 'end', whether to prompt for 
-            start or end date.
+            start or end date. Affects printed message.
+        
     Returns:
-        return_date (date): validated date to pass to control flow"""
+        return_date (datetime.date): validated date to pass to control flow
+    """
 
     return_date = None
     while return_date == None:
