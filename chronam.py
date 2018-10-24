@@ -45,68 +45,85 @@ from urllib.error import URLError
 
 # TODO: allow restarting of downloads -> the function checks if the issue is
 #       in the data structure or not
-def download_newspaper(url, start_date, end_date):
-    """Downloads OCR text of a newspaper from chroniclingamerica.loc.gov by
-    parsing the .json representation using the exposed API. Traverses
-    the json from the newspaper .json url to each page and composes them into
-    a dict of issues where {'date': 'issue text'}
+def download_newspaper(url, start_date, end_date, session):
+    """Downloads OCR text of a newspaper from chroniclingamerica.loc.gov 
+    
+    Parses the JSON representation returned by the API. Traverses the JSON: 
+        newspaper -> issue -> page -> OCR text
+    Concatenates all text into a string and returns a dict of issues keyed on
+    issue date with concatenated issue text as values.
 
-    Params: url -> str: base url of newspaper. Ends in .json
-            start_date -> date: date(year, month, day)
-                          represents the first issue to download
-            end_date   -> date: date(year, month, day)
-                          represents the last issue to download
-    Return: newspaper_issues -> dict: {'date': 'issue text'}"""
+    Args:
+        url (str): URL of JSON representation of newspaper. Ends in '.json'
+        start_date (datetime.date): date of first issue to download
+        end_date (datetime.date): date of last issue to download
+    
+    Returns:
+        newspaper_issues (dict): {'date': 'issue text'}
+
+    Raises:
+        ValueError: If HTTP response cannot be parsed as a JSON file
+        ConnectionError: Raised for network problems, but not for HTTP response
+            codes, like 404, 500, etc.)
+        HTTPError: Raised for unsuccessful HTTP response
+        Timeout: Raised if request does not receive a response from the server
+            for 10 sec.
+    """
 
     newspaper_issues = {}
 
     # Terminal UI Print statements
     print('start date:', start_date)
     print('end date:', end_date)
-
-    # Interface
     print('Getting issues:')
+    
+    for issue in session.get(url).json()['issues']:
+        issue_date = parse_date_YYYY_MM_DD(issue['date_issued'])
+        if (issue_date >= start_date and issue_date <= end_date):
+            if issue['date_issued'] not in newspaper_issues:
+                print(issue['date_issued'])
+                newspaper_issues[issue['date_issued']] = \
+                    assemble_issue(issue['url'], session)
+            else:
+                print(issue['date_issued'] + '-ed-2')
+                newspaper_issues[issue['date_issued'] + '-ed-2'] = \
+                    assemble_issue(issue['url'], session)
 
-    try:
-        for issue in get_json(url)['issues']:
-            issue_date = parse_date_YYYY_MM_DD(issue['date_issued'])
-            if (issue_date >= start_date and issue_date <= end_date):
-                if issue['date_issued'] not in newspaper_issues:
-                    print(issue['date_issued'])
-                    newspaper_issues[issue['date_issued']] = \
-                        assemble_issue(issue['url'])
-                else:
-                    print(issue['date_issued'] + '-ed-2')
-                    newspaper_issues[issue['date_issued'] + '-ed-2'] = \
-                        assemble_issue(issue['url'])
-        return newspaper_issues # dict {'date_issued': 'alltextforallpages'}
-
-    except ValueError as e:
-        return e
+    return newspaper_issues # dict {'date_issued': 'alltextforallpages'}
 
 
-def assemble_issue(url):  # url of issue
+def assemble_issue(url, session):  # url of issue
     """Assembles the OCR text for each page of a newspaper.
+    
     Relies on valid url from dwnld_newspaper()
 
     Params: url -> url of newspaper issue: str
     Return: txt -> OCR text of all pages in newspaper: str"""
 
-    issue_string = ''.join(download_page(page['url']) for 
-        page in get_json(url)['pages'])
-    return issue_string  # str 'alltextforallpages'
+    # Concatenate the OCR text for each page in the issue.
+    return ''.join(download_ocr_text(page['url'], session) for 
+        page in session.get(url).json()['pages'])
 
 
-def download_page(url):  # url of page
+def download_page(url, session):  # url of page
     """Downloads the OCR text of a newspaper page. 
     Relies on valid url from assemble_issue()
 
-    Params: url -> url of OCR text of page: str
-    Return: txt -> OCR text of a newspaper page: str"""
+    Args:
+        url (str): url of JSON representation of newspaper page
+        session (requests.Session): Session object for HTTP request. Allows
+            use of already established peristent TCP connection.
+    Returns:
+        str: URL of OCR text representation of newspaper page
+    """
+    return session.get(url).json()['text']
 
-    txt_url = get_json(url)['text']
-    txt = get_txt(txt_url)
-    return txt
+
+def download_ocr_text(url, session):
+    """Downloads OCR text of newspaper from url of text file.
+    """
+    ocr_text_url = session.get(url).json()['text']
+    return session.get(ocr_text_url).text
 
 
 def get_json(url):
@@ -274,21 +291,27 @@ def lccn_to_disk(dir_name, downloaded_issue):
     return number_of_files_written
 
 # TODO Exception logging?
+# TODO Set requests session timeout
+# TODO requests raise_for_status() & HTTPError
 def cli_interface():
-    try:
-        ui_greeting()
-        lccn = ui_get_newspaper_lccn()
-        url = get_newspaper_url_by_lccn(lccn)
-        ui_display_newspaper(url)
-        start_date = ui_date_input('start')
-        end_date = ui_date_input('end')
-        newspaper_ocr_text = download_newspaper(url, start_date=start_date,
-                                                end_date=end_date)
-        ui_save_newspaper_text_to_disk(lccn, newspaper_ocr_text)
-    except ValueError as e:
-        print('Exiting due to error:', e)
-    except IOError as e:
-        print('Error writing to file:', e)
+    with Session() as session:
+        session.headers.update({'User-Agent': 'Mozilla/5.0'})
+        try:
+            ui_greeting()
+            lccn = ui_get_newspaper_lccn()
+            url = get_newspaper_url_by_lccn(lccn)
+            ui_display_newspaper(url, session)
+            start_date = ui_date_input('start')
+            end_date = ui_date_input('end')
+            newspaper_ocr_text = download_newspaper(url, 
+                                                    start_date=start_date,
+                                                    end_date=end_date,
+                                                    session=session)
+            ui_save_newspaper_text_to_disk(lccn, newspaper_ocr_text)
+        except ValueError as e:
+            print('Exiting due to error:', e)
+        except IOError as e:
+            print('Error writing to file:', e)
 
 
 def ui_greeting():
@@ -312,13 +335,13 @@ def ui_get_newspaper_lccn():
 
 
 # TODO Make robust to missing kwargs in JSON returned by get_json()
-def ui_display_newspaper(url):
+def ui_display_newspaper(url, session):
     """Displays information and issues available for a given newspaper
 
     Parameters: url -> url of JSON file for newspaper: str
-    Returns:    newspaper_json -> dict: JSON from http request"""
-
-    newspaper_json = get_json(url)
+    Returns:    newspaper_json -> dict: JSON from http request
+    """
+    newspaper_json = session.get(url).json()
     newspaper_string = ('{name} | Library of Congress No.: {lccn}'
         ' | {place_of_publication}\nPublished from {start_year} to'
         ' {end_year} by {publisher}').format(**newspaper_json)
