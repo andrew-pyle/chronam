@@ -354,7 +354,6 @@ def ui_date_input(start_end):
     return return_date
 
 
-# TODO Put "no merge" limitation for newspapers into readme.md
 def ui_save_newspaper_text_to_disk(dir_name, newspaper_text_by_date):
     """Saves data to disk at current working directory and prints UI messages.
 
