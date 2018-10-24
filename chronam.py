@@ -126,70 +126,6 @@ def download_ocr_text(url, session):
     return session.get(ocr_text_url).text
 
 
-def get_json(url):
-    """Downloads json from url from chronliclingamerica.loc.gov and saves as a
-    Python dict.
-
-    Parameters: url -> url of JSON file for newspaper to download: str
-    Returns:    json_dict -> dict: JSON from http request"""
-
-    r = Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-
-    # Catch non-chronam urls
-    if validate_chronam_url(url) is not True:
-        raise ValueError('Invalid url for chroniclingamerica.loc.gov OCR '
-                         'newspaper (url must end in .json)')
-    try:
-        data = urlopen(r)
-    except URLError as e:
-        if hasattr(e, 'reason'):
-            print('We failed to reach a server.')
-            print('Reason: ', e.reason)
-            print('url: ', url)
-        elif hasattr(e, 'code'):
-            print('The server couldn\'t fulfill the request.')
-            print('Error code: ', e.code)
-            print('url: ', url)
-    else:
-        json_dict = json.load(data)
-        return json_dict
-
-
-def get_txt(url):
-    """Downloads txt from url from chroniclingamerica.loc.gov and saves as
-    python str.
-
-    Relies on valid url supplied by get_json()
-
-    Parameters: url -> url for OCR text returned by get_json(): str
-    Returns:    retrieved_txt -> OCR text: str"""
-
-    # TODO: return lists of missing & failed pages
-    missing_pages = []
-    failed_pages = []
-
-    r = Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-    try:
-        data = urlopen(r)
-    except URLError as e:
-        if hasattr(e, 'reason'):
-            print('We failed to reach a server.')
-            print('Reason: ', e.reason)
-            print('url: ', url)
-            retrieved_txt = 'Likely Missing Page: Not digitized, published'
-            missing_pages.append(url)
-
-        elif hasattr(e, 'code'):
-            print('The server couldn\'t fulfill the request.')
-            print('Error code: ', e.code)
-            print('url: ', url)
-            retrieved_txt = 'Server didn\'t return any text'
-            failed_pages.append(url)
-    else:
-        retrieved_txt = data.read().decode('utf-8')
-    return retrieved_txt
-
-
 def get_newspaper_url_by_lccn(lccn):
     url = 'http://chroniclingamerica.loc.gov/lccn/{}.json'.format(lccn)
     if validate_chronam_url(url) is True:
@@ -334,7 +270,7 @@ def ui_get_newspaper_lccn():
     return lccn.strip().lower()
 
 
-# TODO Make robust to missing kwargs in JSON returned by get_json()
+# TODO Make robust to missing kwargs in JSON returned by API
 def ui_display_newspaper(url, session):
     """Displays information and issues available for a given newspaper
 
