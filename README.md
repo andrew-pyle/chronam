@@ -5,6 +5,8 @@ This module assumes that you have spent some time on the [Chronicling America](h
 
 This module will not search, download pdfs, images, etc. It is a simple tool which will save you some clicks and quickly download newspaper issue plain text from the site.
 
+![](docs/images/chronam-in-use-min.gif)
+
 ## Installation
 To install chronam, clone the GitHub repository to your local environment. chronam uses [Pipenv](https://pipenv.readthedocs.io/en/latest/) to manage dependencies, so ensure that it is installed. (Pipenv is an npm-like package manager for Python.)
 
@@ -75,10 +77,10 @@ Download OCR text of newspaper "The Charleston daily news" published between 21 
 
 # Requires a requests module Session object to attach the HTTP request to
 >>> ocr = download_newspaper(
-    'http://chroniclingamerica.loc.gov/lccn/sn84026994.json',
-    datetime.date(1865,8,21),
-    datetime.date(1865,8,25),
-    requests.Session())
+        'http://chroniclingamerica.loc.gov/lccn/sn84026994.json',
+        datetime.date(1865,8,21),
+        datetime.date(1865,8,25),
+        requests.Session())
 ```
 Variable `ocr` is a `dict` containing the OCR text for each issue. Keys are dates (`'YYYY-MM-DD'`) and values are a concatenated string of all text for each page of the issue.
 ```python
@@ -86,7 +88,7 @@ Variable `ocr` is a `dict` containing the OCR text for each issue. Keys are date
 dict_keys(['1865-08-21', '1865-08-22', '1865-08-23'])
 
 >>> type(ocr['1865-08-21'])
-str
+<class 'str'>
 
 >>> len(ocr['1865-08-21'])
 131718
